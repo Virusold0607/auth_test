@@ -41,12 +41,30 @@ require_once('MainClass.php');
             <div class="col-lg-5 col-md-8 col-sm-12 col-xs-12">
                 <div class="card shadow rounded-0">
                     <div class="card-body py-4">
+                        <?php 
+                            if(isset($_SESSION['flashdata'])):
+                        ?>
+                        <div class="dynamic_alert alert alert-<?php echo $_SESSION['flashdata']['type'] ?> my-2 rounded-0">
+                            <div class="d-flex align-items-center">
+                                <div class="col-11"><?php echo $_SESSION['flashdata']['msg'] ?></div>
+                                <div class="col-1 text-end">
+                                    <div class="float-end"><a href="javascript:void(0)" class="text-dark text-decoration-none" onclick="$(this).closest('.dynamic_alert').hide('slow').remove()">x</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php unset($_SESSION['flashdata']) ?>
+                        <?php endif; ?>
                         <h1>Welcome <?= ucwords($_SESSION['firstname'].' '.$_SESSION['middlename'].' '.$_SESSION['lastname']) ?></h1>
                         <hr>
                         <p>You are logged in using <?= $_SESSION['email'] ?></p>
                         <div class="clear-fix mb-4"></div>
-                        <div class="text-end">
-                            <a href="./logout.php" class="btn btn btn-primary bg-gradient rounded-0">Logout</a>
+                        <div class="container">
+                            <a href="./delete.php" class="btn m-2 btn-danger bg-gradient rounded-0">Delete Account</a>
+                            <a href="./edit.php" class="btn m-2 btn-secondary bg-gradient rounded-0">Edit</a>
+                            <!-- <a href="./changePassword.php" class="btn m-2 btn-secondary bg-gradient rounded-0">Change Password</a> -->
+                            <a href="./contact.php" class="btn m-2 btn-info bg-gradient rounded-0">Contact Us</a>
+                            <a href="./logout.php" class="btn m-2 btn-primary bg-gradient rounded-0">Logout</a>
                         </div>
                     </div>
                 </div>
@@ -54,5 +72,6 @@ require_once('MainClass.php');
         </div>
     </div>
     </main>
+    
 </body>
 </html>

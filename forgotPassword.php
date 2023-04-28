@@ -1,15 +1,15 @@
 <?php
 require_once('auth.php');
 require_once('MainClass.php');
+$secureWord = $_GET['secureWord'];
+$email = $_GET['email'];
 if($_SERVER['REQUEST_METHOD'] == 'POST'){
-    $register = json_decode($class->register());
-    if($register->status == 'success'){
+    $forgotPassword = json_decode($class->forgotPassword());
+    if($forgotPassword->status == 'success'){
         $_SESSION['flashdata']['type']='success';
-        $_SESSION['flashdata']['msg'] = ' Account has been registered successfully.';
-        echo "<script>location.href = './email_verification.php';</script>";
-        exit;
+        $_SESSION['flashdata']['msg'] = ' Please check your e-mail, we have sent a password reset link to your registered email.';
     }else{
-        echo "<script>console.error(".json_encode($register).");</script>";
+        echo "<script>console.error(".json_encode($forgotPassword).");</script>";
     }
 }
 ?>
@@ -19,7 +19,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login with OTP</title>
+    <title>Forgot Password</title>
     <link rel="stylesheet" href="./Font-Awesome-master/css/all.min.css">
     <link rel="stylesheet" href="./css/bootstrap.min.css">
     <script src="./js/jquery-3.6.0.min.js"></script>
@@ -49,11 +49,11 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
        <div class="col-lg-3 col-md-8 col-sm-12 col-xs-12">
            <div class="card shadow rounded-0">
                <div class="card-header py-1">
-                   <h4 class="card-title text-center">Create an Account</h4>
+                   <h4 class="card-title text-center">Enter The Email Of Your Account To Reset Password</h4>
                </div>
                <div class="card-body py-4">
                    <div class="container-fluid">
-                       <form action="./registration.php" method="POST">
+                       <form action="./forgotPassword.php?secureWord=<?php echo $secureWord; ?>&email=<?php echo $email;?>" method="POST">
                        <?php 
                             if(isset($_SESSION['flashdata'])):
                         ?>
@@ -68,36 +68,16 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
                         </div>
                         <?php unset($_SESSION['flashdata']) ?>
                         <?php endif; ?>
-                            <div class="form-group">
-                               <label for="firstname" class="label-control">First Name</label>
-                               <input type="text" name="firstname" id="firstname" class="form-control rounded-0" value="<?= isset($_POST['firstname']) ? $_POST['firstname'] : '' ?>" autofocus required>
-                            </div>
-                            <div class="form-group">
-                               <label for="middlename" class="label-control">Middle Name</label>
-                               <input type="text" name="middlename" id="middlename" class="form-control rounded-0" value="<?= isset($_POST['middlename']) ? $_POST['middlename'] : '' ?>" required>
-                            </div>
-                            <div class="form-group">
-                               <label for="lastname" class="label-control">Last Name</label>
-                               <input type="text" name="lastname" id="lastname" class="form-control rounded-0" value="<?= isset($_POST['lastname']) ? $_POST['lastname'] : '' ?>" required>
-                            </div>
                            <div class="form-group">
                                <label for="email" class="label-control">Email</label>
-                               <input type="email" name="email" id="email" class="form-control rounded-0" value="<?= isset($_POST['email']) ? $_POST['email'] : '' ?>" required>
-                            </div>
-                            <div class="form-group">
-                               <label for="password" class="label-control">Password</label>
-                               <input type="password" name="password" id="password" class="form-control rounded-0" value="<?= isset($_POST['password']) ? $_POST['password'] : '' ?>" required>
-                            </div>
-                            <div class="form-group">
-                               <label for="secureWord" class="label-control">SecureWord</label>
-                               <input type="text" name="secureWord" id="secureWord" class="form-control rounded-0" value="<?= isset($_POST['secureWord']) ? $_POST['secureWord'] : '' ?>" required>
+                               <input type="email" name="email" id="email" class="form-control rounded-0" value="<?= isset($_POST['email']) ? $_POST['email'] : '' ?>" autofocus required>
                             </div>
                             <div class="clear-fix mb-4"></div>
                             <div class="form-group text-end">
-                                <button class="btn btn-primary bg-gradient rounded-0">Create Account</button>
+                                <button class="btn btn-primary bg-gradient rounded-0">Continue</button>
                             </div>
                             <div class="form-group text-center">
-                                <a href="./email_verification.php">Back</a>
+                                <a href="./login.php?secureWord=<?php echo $secureWord; ?>&email=<?php echo $email;?>">Back</a>
                             </div>
                        </form>
                    </div>

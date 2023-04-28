@@ -1,6 +1,8 @@
 <?php
 if(session_status() === PHP_SESSION_NONE)
 session_start();
+include 'user.php';
+$user = new User();
 Class MainClass{
     protected $db;
     function __construct(){
@@ -16,14 +18,16 @@ Class MainClass{
         foreach($_POST as $k => $v){
             $$k = $this->db->real_escape_string($v);
         }
+        
         $password = password_hash($password, PASSWORD_DEFAULT);
-        $check = $this->db->query("SELECT * FROM `users` where `email`= '$email}' ")->num_rows;
+        $check = $this->db->query("SELECT * FROM `users` WHERE `email`= '$email'")->num_rows;
+        
         if($check > 0){
             $resp['status'] = 'failed';
             $_SESSION['flashdata']['type']='danger';
             $_SESSION['flashdata']['msg'] = ' Email already exists.';
         }else{
-            $sql = "INSERT INTO `users` (firstname,middlename,lastname,email,`password`) VALUES ('$firstname','$middlename','$lastname','$email','$password')";
+            $sql = "INSERT INTO `users` (firstname,middlename,lastname,email,`password`,securityWord) VALUES ('$firstname','$middlename','$lastname','$email','$password','$secureWord')";
             $save = $this->db->query($sql);
             if($save){
                 $resp['status'] = 'success';
@@ -36,6 +40,63 @@ Class MainClass{
         }
         return json_encode($resp);
     }
+
+    public function update(){
+        foreach($_POST as $k => $v){
+            $$k = $this->db->real_escape_string($v);
+        }
+        $email = $_SESSION['email'];
+        $check = $this->db->query("SELECT * FROM `users` WHERE `email`= '$email'")->num_rows;
+        if($check <= 0){
+            $resp['status'] = 'failed';
+            $_SESSION['flashdata']['type']='danger';
+            $_SESSION['flashdata']['msg'] = ' Email already exists.';
+        } else {
+            if(!$changePassword) {
+                $sql = "UPDATE `users` SET firstname = '$firstname', middlename = '$middlename', lastname = '$lastname', securityWord = '$secureWord' WHERE email = '$email' ";
+                $save = $this->db->query($sql);
+                if($save) {
+                    $resp['status'] = 'success';
+                    $_SESSION['firstname'] = $firstname;
+                    $_SESSION['middlename'] = $middlename;
+                    $_SESSION['lastname'] = $lastname;
+                    $_SESSION['secureWord'] = $secureWord;
+                } else {
+                    $resp['status'] = 'failed';
+                    $resp['err'] = $this->db->error;
+                    $_SESSION['flashdata']['type']='danger';
+                    $_SESSION['flashdata']['msg'] = ' An error occurred.';
+                }
+            } else {
+                $_SESSION['changePassword'] = $changePassword;
+                if($password == $confirmPassword) {
+                    $password = password_hash($password, PASSWORD_DEFAULT);
+                    $sql = "UPDATE `users` SET firstname = '$firstname', middlename = '$middlename', lastname = '$lastname', securityWord = '$secureWord', password ='$password' WHERE email = '$email' ";
+                    $save = $this->db->query($sql);
+                    if($save) {
+                        $resp['status'] = 'success';
+                        $_SESSION['firstname'] = $firstname;
+                        $_SESSION['middlename'] = $middlename;
+                        $_SESSION['lastname'] = $lastname;
+                        $_SESSION['secureWord'] = $secureWord;
+                    } else {
+                        $resp['status'] = 'failed';
+                        $resp['err'] = $this->db->error;
+                        $_SESSION['flashdata']['type']='danger';
+                        $_SESSION['flashdata']['msg'] = ' An error occurred.';
+                    }
+                } else {
+                    
+                    $resp['status'] = 'failed';
+                    $_SESSION['flashdata']['type']='danger';
+                    $_SESSION['flashdata']['msg'] = 'Warning! Passwords do not match! Please try again';
+                }
+            }
+        }
+        return json_encode($resp);
+    }
+    
+
     public function login(){
         extract($_POST);
         $sql = "SELECT * FROM `users` where `email` = ? ";
@@ -65,6 +126,7 @@ Class MainClass{
                     $resp['status'] = 'success';
                     $_SESSION['otp_verify_user_id'] = $data['id'];
                     $this->send_mail($data['email'],$otp."k".$qrcodefile); //email method
+                    
                 }else{
                     $resp['status'] = 'failed';
                     $_SESSION['flashdata']['type'] = 'danger';
@@ -75,6 +137,78 @@ Class MainClass{
                $resp['status'] = 'failed';
                $_SESSION['flashdata']['type'] = 'danger';
                $_SESSION['flashdata']['msg'] = ' Incorrect Password';
+                // password incorrect number conunt
+                $_SESSION['fail_psw_number'] ++ ;
+            }
+        }else{
+            $resp['status'] = 'failed';
+            $_SESSION['flashdata']['type'] = 'danger';
+            $_SESSION['flashdata']['msg'] = ' Email is not registered.';
+        }
+        return json_encode($resp);
+    }
+
+    public function emailVerify(){
+        extract($_POST);
+        $sql = "SELECT * FROM `users` where `email` = ? ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('s',$email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if($result->num_rows > 0){
+            $resp['status'] = 'success';
+            $data = $result->fetch_array();
+            $resp['secureWord'] = $data['securityWord'];
+            $resp['email'] = $email;
+        }else{
+            $resp['status'] = 'failed';
+            $_SESSION['flashdata']['type'] = 'danger';
+            $_SESSION['flashdata']['msg'] = ' Email is not registered.';
+        }
+        return json_encode($resp);
+    }
+    
+    public function forgotPassword(){
+        extract($_POST);
+        
+        $sql = "SELECT * FROM `users` where `email` = ? ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('s',$email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if($result->num_rows > 0){
+            //generat unique string
+			$uniqidStr = md5(uniqid(mt_rand()));;
+            $sql = "UPDATE users SET forgot_pass_identity = '$uniqidStr' WHERE email = '$email'";
+            $update = mysqli_query($this->db, $sql);
+            if($update){
+                
+                $resetPassLink = 'http://codexworld.com/resetPassword.php?fp_code='.$uniqidStr;
+				
+				//get user details
+				$con['where'] = array('email'=>$_POST['email']);
+				$con['return_type'] = 'single';
+				$userDetails = $user->getRows($con);
+				
+				//send reset password email
+				$to = $userDetails['email'];
+				$subject = "Password Update Request";
+				$mailContent = 'Dear '.$userDetails['first_name'].', 
+				<br/>Recently a request was submitted to reset a password for your account. If this was a mistake, just ignore this email and nothing will happen.
+				<br/>To reset your password, visit the following link: <a href="'.$resetPassLink.'">'.$resetPassLink.'</a>
+				<br/><br/>Regards,
+				<br/>CodexWorld';
+				//set content-type header for sending HTML email
+				$headers = "MIME-Version: 1.0" . "\r\n";
+				$headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+				//additional headers
+				$headers .= 'From: CodexWorld<sender@example.com>' . "\r\n";
+				//send email
+				mail($to,$subject,$mailContent,$headers);
+				
+				$resp['status']['type'] = 'success';
+				$resp['status']['msg'] = 'Please check your e-mail, we have sent a password reset link to your registered email.';
             }
         }else{
             $resp['status'] = 'failed';
@@ -99,6 +233,7 @@ Class MainClass{
                 }
             }
             $resp['data'] = $data;
+            $_SESSION['secureWord'] = $data['securityWord'];
         }else{
             $resp['status'] = 'false';
         }

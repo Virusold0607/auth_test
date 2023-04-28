@@ -7,4 +7,4 @@ foreach($_SESSION as $k =>$v){
     unset($_SESSION[$k]);
 }
 
-echo "<script>location.replace('./login.php');</script>";
+echo "<script>location.replace('./email_verification.php');</script>";

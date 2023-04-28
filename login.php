@@ -1,12 +1,18 @@
 <?php
 require_once('auth.php');
 require_once('MainClass.php');
+$secureWord = $_GET['secureWord'];
+$email = $_GET['email'];
 if($_SERVER['REQUEST_METHOD'] == 'POST'){
     $login = json_decode($class->login());
     if($login->status == 'success'){
         echo "<script>location.replace('./login_verification.php');</script>";
     }
 }
+// if($_SESSION['fail_psw_number'] >= 3){
+//     $_SESSION['fail_psw_action'] = 'true';
+//     echo "<script>location.replace('./login_verification.php');</script>";
+// }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -48,7 +54,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
                </div>
                <div class="card-body py-4">
                    <div class="container-fluid">
-                       <form action="./login.php" method="POST">
+                       <form action="./login.php?secureWord=<?php echo $secureWord; ?>&email=<?php echo $email;?>" method="POST">
                        <?php 
                             if(isset($_SESSION['flashdata'])):
                         ?>
@@ -62,21 +68,23 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
                             </div>
                         </div>
                         <?php unset($_SESSION['flashdata']) ?>
-                        <?php endif; ?>
+                        <?php endif;?>
+                            <div class="text-center">
+                                <h2 class="text-info"><?php echo $secureWord; ?></h2>
+                                <i class="text-muted">Do not preceed if this is not your SecureWord</i>
+                                <h6 class="text-muted"><input type="checkbox" id="myCheckbox"> Yes, this is my SecureWord</h6>
+                            </div>
                            <div class="form-group">
-                               <label for="email" class="label-control">Email</label>
-                               <input type="email" name="email" id="email" class="form-control rounded-0" value="<?= isset($_POST['email']) ? $_POST['email'] : '' ?>" autofocus required>
-                           </div>
-                           <div class="form-group">
+                                <input type="email" name="email" id="email" class="form-control rounded-0" value="<?php echo $email;?>" hidden>
                                <label for="password" class="label-control">Password</label>
-                               <input type="password" name="password" id="password" class="form-control rounded-0" value="<?= isset($_POST['password']) ? $_POST['password'] : '' ?>" required>
+                               <input type="password" name="password" id="password" class="form-control rounded-0" value="" required disabled>
                             </div>
                             <div class="clear-fix mb-4"></div>
                             <div class="form-group text-end">
-                                <button class="btn btn-primary bg-gradient rounded-0">LOGIN</button>
+                                <button class="btn btn-primary bg-gradient rounded-0" id='loginButton' disabled>LOGIN</button>
                             </div>
                             <div class="form-group text-cneter">
-                                <a href="registration.php">Create a New Account</a>
+                                <a href="./forgotPassword.php?secureWord=<?php echo $secureWord; ?>&email=<?php echo $email;?>">Forgot Password?</a>
                             </div>
                        </form>
                    </div>
@@ -84,5 +92,23 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
            </div>
        </div>
     </main>
+    <label>
+    <script>
+        $(function() {
+            var index = 0;
+            var checkbox = $('#myCheckbox');
+            var textField = $('#password');
+            var loginButton = $('#loginButton')
+            checkbox.change(function() {
+                if(this.checked) {
+                    textField.prop('disabled', false);
+                    loginButton.prop('disabled', false);
+                } else {
+                    textField.prop('disabled', true);
+                    loginButton.prop('disabled', true);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
